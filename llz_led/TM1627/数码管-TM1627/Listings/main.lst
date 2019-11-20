@@ -1,0 +1,89 @@
+C51 COMPILER V9.54   MAIN                                                                  08/12/2017 15:10:45 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE main.c LARGE OPTIMIZE(8,SPEED) BROWSE MODP2 DEBUG OBJECTEXTEND PRINT(.\L
+                    -istings\main.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          //STC15W4K56S4  内部震荡 27MHZ 
+   2          //用于内部测试功能
+   3          #include<T4_Test.h>
+   4          #include<Uart_1_Test.h>
+   5          #include<TM1627.h>
+   6          
+   7          extern struct  Display;
+   8          unsigned char TM1627_Key=0;
+   9          void main(void)
+  10          {
+  11   1        SP = 0X81;//把堆栈的地址指向0x81
+  12   1        P0M1=0;P0M0=0;P1M1=0;P1M0=0;
+  13   1        P2M1=0;P2M0=0;P3M1=0;P3M0=0;
+  14   1        P4M1=0;P4M0=0;P5M1=0;P5M0=0;//上电初始化所有IO口为普通IO
+  15   1        Init_T4();//初始化板载LED灯
+  16   1        Init_Uart1();//初始化串口 9600bps 27MHZ
+  17   1        EA =1;//打开全局中断
+  18   1        Init_TM1627();//初始化TM1627
+  19   1        Delay1ms(5);//上电等待一会，让晶振更稳定
+  20   1        Send_Str1("OK");
+  21   1        while(1)
+  22   1        {
+  23   2          if(INT0 == 0)
+  24   2          {
+  25   3            Delay1ms(100);
+  26   3            if(INT0 == 0)
+  27   3            {
+  28   4              Show_Number(2,0,1,7,0,0,0x00);
+  29   4            
+  30   4              
+  31   4            }
+  32   3          }
+  33   2          if(INT1 == 0)
+  34   2          {
+  35   3            Delay1ms(100);
+  36   3            if(INT1 == 0)
+  37   3            {
+  38   4              
+  39   4              Send_Data1(0X77);
+  40   4            }
+  41   3          }
+  42   2          if(P37 == 0)
+  43   2          {
+  44   3            TM1627_Key = Read_Key();
+  45   3            Send_Data1(TM1627_Key);
+  46   3            Send_Data1(0X88);
+  47   3            Delay1ms(800);
+  48   3          }
+  49   2          
+  50   2        }
+  51   1      }
+  52          
+  53          
+  54          
+C51 COMPILER V9.54   MAIN                                                                  08/12/2017 15:10:45 PAGE 2   
+
+  55          
+  56          
+  57          
+  58          
+  59          
+  60          
+  61          
+  62          
+  63          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    135    ----
+   CONSTANT SIZE    =      3    ----
+   XDATA SIZE       =      1    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

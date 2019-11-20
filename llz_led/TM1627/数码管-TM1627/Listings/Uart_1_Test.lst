@@ -1,0 +1,90 @@
+C51 COMPILER V9.54   UART_1_TEST                                                           08/12/2017 15:10:45 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE UART_1_TEST
+OBJECT MODULE PLACED IN .\Objects\Uart_1_Test.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE Uart_1_Test.c LARGE OPTIMIZE(8,SPEED) BROWSE MODP2 DEBUG OBJECTEXTEND PR
+                    -INT(.\Listings\Uart_1_Test.lst) TABS(2) OBJECT(.\Objects\Uart_1_Test.obj)
+
+line level    source
+
+   1          //测试串口0，与USB转串口直接连接
+   2          #include<Uart_1_Test.h>
+   3          bit busy1=0;//COM1用到的发送忙标志
+   4          /*******中断程序，最短程序 示范 UART1******************************************/
+   5          void INT_Uart1(void) interrupt 4
+   6          {
+   7   1        if(RI)//清空读中断标志位
+   8   1        {
+   9   2          RI = 0;
+  10   2          if(SBUF == 0XFA)//收到 0XFA ，单片机复位到烧写区
+  11   2            IAP_CONTR = 0x60;
+  12   2          
+  13   2        }
+  14   1        if(TI)//清空发送中断标志位
+  15   1        {
+  16   2          TI = 0;
+  17   2          busy1 = 0;
+  18   2        }
+  19   1      }
+  20          // 描述: 串口初始化程序.
+  21          void Init_Uart1(void)
+  22          {
+  23   1        SCON = 0x50;//
+  24   1        AUXR |= 0x40;//定时器1，1T
+  25   1        AUXR &= 0xFE;
+  26   1        TMOD &= 0x0F; 
+  27   1        TL1 = 0x41;   //
+  28   1        TH1 = 0xFD;//波特率设置   9600 27MHZ
+  29   1        ET1 = 0;
+  30   1        TR1 = 1;
+  31   1        ES = 1;//允许COM1串行口中断
+  32   1        //PS = 1;//COM1最高优先级中断   
+  33   1      }
+  34          //COM1发送一个字节
+  35          void Send_Data1(unsigned char dat)
+  36          {
+  37   1        busy1 = 1;
+  38   1        SBUF = dat;
+  39   1        while(busy1);
+  40   1        busy1 = 1;
+  41   1        
+  42   1      }
+  43          // 描述: COM1发送一个字符串
+  44          void Send_Str1(unsigned char *s)
+  45          {
+  46   1        do
+  47   1          Send_Data1(*s++);
+  48   1        while(*s);
+  49   1      }
+  50          //延时函数  主函数中使用
+  51          void Delay1ms(unsigned int a) // 1ms @27.000MHz
+  52          {
+  53   1        unsigned char i, j;
+  54   1        unsigned int b=0;
+C51 COMPILER V9.54   UART_1_TEST                                                           08/12/2017 15:10:45 PAGE 2   
+
+  55   1        for(b=0;b<a;b++)
+  56   1        {
+  57   2          i = 27;
+  58   2          j = 64;
+  59   2          do
+  60   2          {
+  61   3            while (--j);
+  62   3          } while (--i);
+  63   2        }
+  64   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    141    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----       3
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

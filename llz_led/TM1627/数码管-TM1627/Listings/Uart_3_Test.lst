@@ -1,0 +1,84 @@
+C51 COMPILER V9.54   UART_3_TEST                                                           06/16/2017 16:27:34 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE UART_3_TEST
+OBJECT MODULE PLACED IN .\Objects\Uart_3_Test.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE Uart_3_Test.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listin
+                    -gs\Uart_3_Test.lst) TABS(2) OBJECT(.\Objects\Uart_3_Test.obj)
+
+line level    source
+
+   1          //测试串口3   9600bps  27Mhz
+   2          //串口3 兼容Ardunio的串口引脚
+   3          #include<Uart_3_Test.h>
+   4          #define TNOW P27    //P27作为485软件流控的控制引脚
+   5          bit busy3=0;//串口发送忙标志位
+   6          
+   7          
+   8          //初始化COM3
+   9          void Uart_3_INIT(void)
+  10          {
+  11   1        S3CON &= 0x7F;//串口3，8位串口，波特率可变
+  12   1        S3CON |= 0x40;//串口3使用T3作为波特率发生器
+  13   1        S3CON |= 0x10;//COM3允许接收
+  14   1        T3L = 0x41; 
+  15   1        T3H |= 0xFD;//设置T3波特率 9600 27Mhz
+  16   1        T4T3M |= 0x0A;//打开T3定时器 1T模式
+  17   1        IE2 |= 0X08;//允许com3中断
+  18   1        TNOW = 0;//使能接收
+  19   1        P2M1=0;P2M0 |=0x80;//P27作为强推挽输出，作为TNOW用
+  20   1      }
+  21          //串口3中断
+  22          void Uart3_INT() interrupt 17 
+  23          {
+  24   1        if(S3CON & 0x01)//S3RI
+  25   1        {
+  26   2          if(S3BUF == 0X88)
+  27   2            S3BUF = 0x99;//测试串口是否正常使用
+  28   2          S3CON &= 0xFE;
+  29   2        }
+  30   1        if(S3CON & 0X02) //S3TI
+  31   1        {
+  32   2          busy3 = 0;
+  33   2          S3CON  &= 0XFD;
+  34   2        }
+  35   1      }
+  36          // 描述: COM3发送一个字节
+  37          void Send_Data3(unsigned char dat)
+  38          {
+  39   1        TNOW = 1;//使能发送
+  40   1        busy3 = 1;
+  41   1        S3BUF = dat;
+  42   1        while(busy3);
+  43   1        TNOW = 0;//使能接收
+  44   1        busy3 = 1;
+  45   1      }
+  46          // 描述: COM3发送一个字符串
+  47          void Send_Str3(unsigned char *s)
+  48          {
+  49   1        do
+  50   1          Send_Data3(*s++);
+  51   1        while(*s);
+  52   1      }
+  53          
+  54          
+C51 COMPILER V9.54   UART_3_TEST                                                           06/16/2017 16:27:34 PAGE 2   
+
+  55          
+  56          
+  57          
+  58          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    118    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       3
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,8 @@
+".\Objects\main.obj",
+".\Objects\T4_Test.obj",
+".\Objects\Uart_1_Test.obj",
+".\Objects\RTC-DS1302Z.obj" 
+TO ".\Objects\RTC-BL5732" 
+PRINT(".\Listings\RTC-BL5732.m51") RAMSIZE(256) 
+CODE( 0X0000-0XEFF8 )
+XDATA( 0X0000-0X0EFF )

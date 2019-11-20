@@ -1,0 +1,8 @@
+".\Objects\main.obj",
+".\Objects\T4_Test.obj",
+".\Objects\Uart_1_Test.obj",
+".\Objects\TM1627.obj" 
+TO ".\Objects\RTC-DS1302" 
+PRINT(".\Listings\RTC-DS1302.m51") RAMSIZE(256) 
+CODE( 0X0000-0XEFF8 )
+XDATA( 0X0000-0X0EFF )

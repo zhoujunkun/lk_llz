@@ -1,0 +1,213 @@
+C51 COMPILER V9.54   TM1627                                                                08/12/2017 15:10:45 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE TM1627
+OBJECT MODULE PLACED IN .\Objects\TM1627.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE TM1627.c LARGE OPTIMIZE(8,SPEED) BROWSE MODP2 DEBUG OBJECTEXTEND PRINT(.
+                    -\Listings\TM1627.lst) TABS(2) OBJECT(.\Objects\TM1627.obj)
+
+line level    source
+
+   1          #include<TM1627.h>
+   2          #define KEYINT  P37     //INT3的IO口
+   3          #define DIO     P55
+   4          #define CLK     P54
+   5          #define STB     P53
+   6          
+   7          //定义0-9，10个数字的HEX格式   第10个数据是0x00,关闭某个数码管
+   8          unsigned char NUM_Dat[11]={0X3f,0X06,0X5b,0X4f,0X66,0X6d,0X7d,0X07,0X7f,0x6f,0};
+   9          //定义一个结构体，用于
+  10          struct 
+  11          {
+  12            unsigned char Mod;//显示模式
+  13            unsigned char CMD;//数据命令
+  14            unsigned char Addr;//显示地址
+  15            unsigned char Num1_H;
+  16            unsigned char Num1_L;
+  17            unsigned char Num2_H;
+  18            unsigned char Num2_L;
+  19            unsigned char Num3_H;
+  20            unsigned char Num3_L;
+  21            unsigned char Num4_H;
+  22            unsigned char Num4_L;
+  23            unsigned char LED_H;
+  24            unsigned char LED_L;
+  25            unsigned char Show_CMD;//显示控制命令
+  26          }Display;
+  27          //初始化TM1627的IO口
+  28          void  Init_TM1627(void)
+  29          {
+  30   1        P5M1 &= 0XC7;
+  31   1        P5M0 &= 0XC7;
+  32   1        P5M0 |= 0X18;//设置P53,P54为强推挽 P55普通双向口
+  33   1        Display.Mod = 0X01;//设置显示模式   5位12段
+  34   1        Display.CMD = 0X40;//设置数据命令   写数据到IC，地址自动增加
+  35   1        Display.Addr = 0XC0;//设置显示地址     00H
+  36   1        Display.Show_CMD = 0X89;//显示控制命令 打开数码管，
+  37   1        Display.Num1_H = NUM_Dat[10];
+  38   1        Display.Num1_L = 0;
+  39   1        Display.Num2_H = NUM_Dat[10];
+  40   1        Display.Num2_L = 0;
+  41   1        Display.Num3_H = NUM_Dat[10];
+  42   1        Display.Num3_L = 0;
+  43   1        Display.Num4_H = NUM_Dat[10];
+  44   1        Display.Num4_L = 0;
+  45   1        Display.LED_H = NUM_Dat[10];
+  46   1        Display.LED_L = 0;
+  47   1      }
+  48          //按照通信规则，写入一个字节
+  49          void  Write_Byte_TM1672(unsigned char dat_1)
+  50          {
+  51   1        unsigned char i=0;
+  52   1        unsigned char Dat=0;
+  53   1        Dat = dat_1;//把数据提取到临时变量
+  54   1        for(i=0;i<8;i++)
+C51 COMPILER V9.54   TM1627                                                                08/12/2017 15:10:45 PAGE 2   
+
+  55   1        {
+  56   2          CLK = 0;
+  57   2          NOP5();
+  58   2          if(Dat&0X01)
+  59   2            DIO = 1;
+  60   2          else
+  61   2            DIO =0;
+  62   2          Dat >>= 1;
+  63   2          CLK = 1;
+  64   2          NOP5();
+  65   2        }
+  66   1      }
+  67          //按照通信规则，读取一个字节
+  68          unsigned char Read_Byte_TM1672(void)
+  69          {
+  70   1        unsigned char i=0;
+  71   1        unsigned char Dat=0;
+  72   1        //NOP40();//延时至少1us，规定的通信规则
+  73   1        //DIO = 1;//51IO口特性，由于之前是输出，所以现在IO口送1，利于接下来的读取IO数据
+  74   1        Dat = 0;
+  75   1        for(i=0;i<8;i++)//芯片是从低位开始输出的，所以这里的最高位，表示实际的低位
+  76   1        {
+  77   2          Dat <<= 1;
+  78   2          CLK = 0;
+  79   2          NOP5();
+  80   2          CLK = 1;
+  81   2          NOP5();
+  82   2          if(DIO)
+  83   2            Dat++;
+  84   2        }
+  85   1        return Dat;
+  86   1      }
+  87          //地址增加模式写入数据
+  88          void  Show_TM1672(void)
+  89          {
+  90   1        //设置为连续增加模式，防止模式切换时候出问题
+  91   1        Display.Mod = 0X01;//设置显示模式   5位12段
+  92   1        Display.CMD = 0X40;//设置数据命令   写数据到IC，地址自动增加
+  93   1        Display.Addr = 0XC0;//设置显示地址     00H
+  94   1        Display.Show_CMD = 0X89;//显示控制命令 打开数码管，
+  95   1        STB = 0;
+  96   1        Write_Byte_TM1672(Display.Mod);//设置显示模式   5位12段
+  97   1        STB=1;NOP40();STB = 0;
+  98   1        Write_Byte_TM1672(Display.CMD);//设置数据命令   写数据到IC，地址自动增加
+  99   1        STB=1;NOP40();STB = 0;
+ 100   1        Write_Byte_TM1672(Display.Addr);//设置显示地址     00H
+ 101   1        Write_Byte_TM1672(Display.Num1_H);//显示数据
+ 102   1        Write_Byte_TM1672(Display.Num1_L);//显示数据
+ 103   1        Write_Byte_TM1672(Display.Num2_H);//显示数据
+ 104   1        Write_Byte_TM1672(Display.Num2_L);//显示数据
+ 105   1        Write_Byte_TM1672(Display.Num3_H);//显示数据
+ 106   1        Write_Byte_TM1672(Display.Num3_L);//显示数据
+ 107   1        Write_Byte_TM1672(Display.Num4_H);//显示数据
+ 108   1        Write_Byte_TM1672(Display.Num4_L);//显示数据
+ 109   1        Write_Byte_TM1672(Display.LED_H);//显示数据
+ 110   1        Write_Byte_TM1672(Display.LED_L);//显示数据
+ 111   1        STB=1;NOP40();STB = 0;
+ 112   1        Write_Byte_TM1672(0X89);//显示控制命令 打开数码管
+ 113   1        STB = 1;
+ 114   1        NOP40();
+ 115   1      }
+ 116          //显示任意数字
+C51 COMPILER V9.54   TM1627                                                                08/12/2017 15:10:45 PAGE 3   
+
+ 117          //分别是  数字1，数字2，数字3，数字4，点的位置，冒号是否显示,LED显示多少
+ 118          void  Show_Number(unsigned char N1,unsigned char N2,unsigned char N3,unsigned char N4,unsigned char D,unsig
+             -ned char D2,unsigned char LED)
+ 119          {
+ 120   1        if(D == 1)
+ 121   1          Display.Num1_H = NUM_Dat[N1]|0X80;
+ 122   1        else
+ 123   1          Display.Num1_H = NUM_Dat[N1];
+ 124   1        Display.Num1_L = 0;
+ 125   1        if(D == 2)
+ 126   1          Display.Num2_H = NUM_Dat[N2]|0X80;
+ 127   1        else
+ 128   1          Display.Num2_H = NUM_Dat[N2];
+ 129   1        if(D2 == 1)
+ 130   1          Display.Num2_L = 0X01;
+ 131   1        else
+ 132   1          Display.Num2_L = 0;
+ 133   1        if(D == 3)
+ 134   1          Display.Num3_H = NUM_Dat[N3]|0X80;
+ 135   1        else
+ 136   1          Display.Num3_H = NUM_Dat[N3];
+ 137   1        if(D2 == 1)
+ 138   1          Display.Num3_L = 0X01;
+ 139   1        else
+ 140   1          Display.Num3_L = 0;
+ 141   1        if(D == 4)
+ 142   1          Display.Num4_H = NUM_Dat[N4]|0X80;
+ 143   1        else
+ 144   1          Display.Num4_H = NUM_Dat[N4];
+ 145   1        Display.Num4_L = 0;
+ 146   1        Display.LED_H = LED;
+ 147   1        Display.LED_L = 0;
+ 148   1        Show_TM1672();//刷新数码管
+ 149   1      }
+ 150          //读取按键程序  从低位到高位依次是 3 2 1
+ 151          unsigned char Read_Key(void)
+ 152          {
+ 153   1        unsigned char i=0;
+ 154   1        unsigned char dat[5];
+ 155   1        unsigned char key;
+ 156   1        STB = 0;
+ 157   1        Write_Byte_TM1672(0X42);//设置显示模式
+ 158   1        NOP40();//延时至少1us，规定的通信规则
+ 159   1        DIO = 1;//51IO口特性，由于之前是输出，所以现在IO口送1，利于接下来的读取IO数据
+ 160   1        for(i=0;i<5;i++)
+ 161   1        {
+ 162   2          dat[i] = Read_Byte_TM1672();
+ 163   2          DIO = 1;
+ 164   2          NOP40();//延时至少1us，规定的通信规则
+ 165   2        }
+ 166   1        STB = 1;
+ 167   1        key = 0;
+ 168   1        dat[1] >>= 4;
+ 169   1        key += dat[1];//KEY1 
+ 170   1        key <<= 1;
+ 171   1        dat[3] >>= 6;
+ 172   1        key += dat[3]>>1;
+ 173   1        key <<= 1;
+ 174   1        dat[3] &= 1;
+ 175   1        key += dat[3];
+ 176   1        return key;
+ 177   1      }
+C51 COMPILER V9.54   TM1627                                                                08/12/2017 15:10:45 PAGE 4   
+
+ 178          //
+ 179          
+ 180          
+ 181          
+ 182          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    757    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =     25      12
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

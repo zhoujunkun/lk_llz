@@ -1,0 +1,53 @@
+C51 COMPILER V9.54   T4_TEST                                                               08/12/2017 15:10:45 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE T4_TEST
+OBJECT MODULE PLACED IN .\Objects\T4_Test.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE T4_Test.c LARGE OPTIMIZE(8,SPEED) BROWSE MODP2 DEBUG OBJECTEXTEND PRINT(
+                    -.\Listings\T4_Test.lst) TABS(2) OBJECT(.\Objects\T4_Test.obj)
+
+line level    source
+
+   1          //功能 ：用于测试定时器T4的文件
+   2          #include<T4_Test.h>
+   3          
+   4          unsigned char T4_Count=0;//T4中断计数器
+   5          //初始化定时器T4
+   6          void Init_T4(void)
+   7          {
+   8   1        //初始化T4作为MCULED指示灯
+   9   1        T4T3M &= 0xDF;//12T工作模式
+  10   1        T4L = 0x38;
+  11   1        T4H = 0x50;//初始化时间  27MHZ 20MS
+  12   1        //T4T3M |= 0x10;//P0.6输出T4的溢出率
+  13   1        IE2 |= 0X40;//允许T4中断
+  14   1        T4T3M |= 0x80;//打开T4定时器
+  15   1      }
+  16          //定时器T4中断服务程序
+  17          void T4_INT(void) interrupt 20
+  18          {
+  19   1        T4_Count++;
+  20   1        if(T4_Count > 5)
+  21   1        {
+  22   2          T4_Count = 0;
+  23   2          MCU_LED1 = ~MCU_LED1;
+  24   2          MCU_LED2 = ~MCU_LED2;
+  25   2        }
+  26   1      }
+  27          
+  28          
+  29          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     65    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =      1    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

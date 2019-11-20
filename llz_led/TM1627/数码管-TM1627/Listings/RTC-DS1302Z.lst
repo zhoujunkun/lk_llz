@@ -1,0 +1,150 @@
+C51 COMPILER V9.54   RTC_DS1302Z                                                           08/11/2017 14:16:58 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE RTC_DS1302Z
+OBJECT MODULE PLACED IN .\Objects\RTC-DS1302Z.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE RTC-DS1302Z.c LARGE OPTIMIZE(8,SPEED) BROWSE MODP2 DEBUG OBJECTEXTEND PR
+                    -INT(.\Listings\RTC-DS1302Z.lst) TABS(2) OBJECT(.\Objects\RTC-DS1302Z.obj)
+
+line level    source
+
+   1          #include<RTC-DS1302Z.h>
+   2          sbit SCK = P4^0;
+   3          sbit IO  = P4^1;
+   4          sbit RST = P4^2;//定义接口线序
+   5          struct RTC_Dat RTC_Data;//RTC交换的数据
+   6          unsigned char *RTC_Data_P=&RTC_Data.Year;//定义一个指针，用于操作RTC交换的数据
+   7          
+   8          
+   9          //RTC初始化函数
+  10          void Ds1302_Init(void) 
+  11          {
+  12   1        RST=0;      //RST脚置低
+  13   1        SCK=0;      //SCK脚置低
+  14   1        IO = 0;
+  15   1      }
+  16          //向RTC写入一字节数据
+  17          void Ds1302_Write_Byte(unsigned char addr, unsigned char d) 
+  18          {
+  19   1        unsigned char i;
+  20   1        unsigned char dat;
+  21   1        RST=1;//启动DS1302总线  
+  22   1        //写入目标地址：addr
+  23   1        dat = addr;//注意，是写的地址
+  24   1        for(i=0;i<8;i++) 
+  25   1        { 
+  26   2          if(dat & 0x01) 
+  27   2            IO=1;
+  28   2          else 
+  29   2            IO=0;
+  30   2          SCK=1;//产生时钟
+  31   2          NOP(27);
+  32   2          SCK=0;
+  33   2          NOP(27);
+  34   2          dat >>= 1;
+  35   2        } 
+  36   1        //写入数据：d
+  37   1        dat = d;
+  38   1        for(i=0;i<8;i ++)
+  39   1        {
+  40   2          if(dat&0x01) 
+  41   2            IO=1;
+  42   2          else 
+  43   2            IO=0;
+  44   2          SCK=1;//产生时钟
+  45   2          NOP(27);
+  46   2          SCK=0;
+  47   2          NOP(27);
+  48   2          dat >>= 1;
+  49   2        }
+  50   1        RST=0;    //停止DS1302总线
+  51   1      }
+  52          //从RTC读出一字节数据
+  53          unsigned char Ds1302_Read_Byte(unsigned char addr) 
+  54          {
+C51 COMPILER V9.54   RTC_DS1302Z                                                           08/11/2017 14:16:58 PAGE 2   
+
+  55   1        unsigned char i=0;  
+  56   1        unsigned char dat;
+  57   1        RST=1;//启动DS1302总线
+  58   1        //写入目标地址：addr
+  59   1        dat = addr;//注意，是读的地址
+  60   1        for(i=0;i<8;i++) 
+  61   1        {
+  62   2          if(dat & 0x01) 
+  63   2            IO=1;
+  64   2          else 
+  65   2            IO=0;
+  66   2          SCK=1;
+  67   2          NOP(27);
+  68   2          SCK=0;
+  69   2          NOP(27);  
+  70   2          dat >>= 1;
+  71   2        }
+  72   1        IO=1;//51,IO口的特性，因为上一个回合是输出，接下来想作为输入，必须先置1才能正确读取外部状态
+  73   1        dat = 0;
+  74   1        //输出数据：dat
+  75   1        for(i=0;i<8;i++) 
+  76   1        {
+  77   2          dat >>= 1;
+  78   2          if(IO)
+  79   2            dat |= 0x80;
+  80   2          else 
+  81   2            dat &= 0x7F;
+  82   2          SCK=1;
+  83   2          NOP(27);  
+  84   2          SCK=0;
+  85   2          NOP(27);  
+  86   2        } 
+  87   1        RST=0;          //停止DS1302总线
+  88   1        return dat;
+  89   1      }
+  90          //向RTC写入时钟数据
+  91          void Ds1302_Write_Time(struct RTC_Dat *RTC_D) 
+  92          {
+  93   1        Ds1302_Write_Byte(0x8E,0X00);//关闭写保护
+  94   1        Ds1302_Write_Byte(0x80,RTC_D->Seconds);
+  95   1        Ds1302_Write_Byte(0x82,RTC_D->Minutes);
+  96   1        Ds1302_Write_Byte(0x84,RTC_D->Hour);
+  97   1        Ds1302_Write_Byte(0x86,RTC_D->Date);
+  98   1        Ds1302_Write_Byte(0x88,RTC_D->Month);
+  99   1        Ds1302_Write_Byte(0x8A,RTC_D->Day);
+ 100   1        Ds1302_Write_Byte(0x8C,RTC_D->Year);
+ 101   1        Ds1302_Write_Byte(0x90,RTC_D->Charger);//修改充电状态
+ 102   1        Ds1302_Write_Byte(0x8E,0X80);//打开写保护
+ 103   1      }
+ 104          //从RTC读出时钟数据
+ 105          void Ds1302_Read_Time(struct RTC_Dat *RTC_D)  
+ 106          {
+ 107   1        RTC_D->Seconds = Ds1302_Read_Byte(0X81);
+ 108   1        RTC_D->Minutes = Ds1302_Read_Byte(0X83);
+ 109   1        RTC_D->Hour = Ds1302_Read_Byte(0X85);
+ 110   1        RTC_D->Date = Ds1302_Read_Byte(0X87);
+ 111   1        RTC_D->Month = Ds1302_Read_Byte(0X89);
+ 112   1        RTC_D->Day = Ds1302_Read_Byte(0X8B);
+ 113   1        RTC_D->Year = Ds1302_Read_Byte(0X8D);
+ 114   1        RTC_D->WP = Ds1302_Read_Byte(0X8F);
+ 115   1        RTC_D->Charger = Ds1302_Read_Byte(0X91);
+ 116   1      }
+C51 COMPILER V9.54   RTC_DS1302Z                                                           08/11/2017 14:16:58 PAGE 3   
+
+ 117          
+ 118          
+ 119          
+ 120          
+ 121          
+ 122          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    552    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =     13    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
